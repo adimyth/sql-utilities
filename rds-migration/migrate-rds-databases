@@ -1,0 +1,32 @@
+#/bin/bash
+DIR="$(pwd)"
+source $DIR/.env
+
+SRC_ENCODED_PASSWORD=$(curl -s -w '%{url}\n' -G / --data-urlencode "=$SRC_PASSWORD" | cut -c 3-)
+DEST_ENCODED_PASSWORD=$(curl -s -w '%{url}\n' -G / --data-urlencode "=$DEST_PASSWORD" | cut -c 3-)
+
+SRC_CONNECTION_URI="postgresql://"$SRC_USERNAME":"$SRC_ENCODED_PASSWORD"@"$SRC_HOST":"$SRC_PORT"/"$SRC_DBNAME
+DEST_CONNECTION_URI="postgresql://"$DEST_USERNAME":"$DEST_ENCODED_PASSWORD"@"$DEST_HOST":"$DEST_PORT"/"$DEST_DBNAME
+
+echo "SOURCE URI: "$SRC_CONNECTION_URI
+echo "\n"
+echo "DESTINATION URI: "$DEST_CONNECTION_URI
+echo "\n\n"
+
+echo "====================="
+echo "EXPORTING FROM SOURCE"
+echo "====================="
+start=$(date +%s)
+pg_dump -Ft -d $SRC_CONNECTION_URI --no-owner --no-acl >$DUMP_FILE
+end=$(date +%s)
+echo "Export Time: $(($end - $start)) seconds"
+echo "\n\n"
+
+echo "========================"
+echo "RESTORING TO DESTINATION"
+echo "========================"
+start=$(date +%s)
+# restore without ownership & privileges commands
+pg_restore --no-owner --no-privileges --dbname $DEST_CONNECTION_URI $DUMP_FILE
+end=$(date +%s)
+echo "Restoration Time: $(($end - $start)) seconds"

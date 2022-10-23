@@ -1,0 +1,47 @@
+#/bin/bash
+
+DIR="$(pwd)"
+source $DIR/.env
+
+if [[ "x$DB_HOST" == "x" ]]; then
+    echo "Please provide DB_HOST"
+    exit
+fi
+
+if [[ "x$DB_PASSWORD" == "x" ]]; then
+    echo "Please provide DB_PASSWORD"
+    exit
+fi
+
+if [[ "x$S3_BUCKET" == "x" ]]; then
+    echo "Please provide S3_BUCKET"
+    exit
+fi
+
+for DB_NAME in ${ALL_DBS[@]}; do
+    TIME=$(date +"%Y-%m-%d %T")
+    echo "=================================="
+    echo "Exporting "$DB_NAME" at "$TIME
+    echo "=================================="
+    start=$(date +%s)
+
+    DB_ENCODED_PASS=$(curl -s -w '%{url}\n' -G / --data-urlencode "=$DB_PASSWORD" | cut -c 3-)
+    CONNECTION_URI="postgresql://"$DB_USER":"$DB_ENCODED_PASS"@"$DB_HOST":"$DB_PORT"/"$DB_NAME
+
+    CURR_MONTH=$(date +"%Y-%m")
+    CURR_TIME=$(date +"%Y-%m-%d-%H-%M-%S")
+
+    BACKUP_DIR="$DIR/backup/$CURR_MONTH"
+    BACKUP_FULL_PATH="$BACKUP_DIR/$DB_NAME-$CURR_TIME.sql.gz"
+
+    S3_URL="s3://$S3_BUCKET/$CURR_MONTH/"
+
+    mkdir -p ${BACKUP_DIR}
+
+    pg_dump -Ft -d $CONNECTION_URI --no-owner --no-acl | gzip >$BACKUP_FULL_PATH
+    aws s3 cp ${BACKUP_FULL_PATH} ${S3_URL}
+
+    end=$(date +%s)
+    echo "Time Elapsed: $(($end - $start)) seconds"
+    echo "\n\n"
+done
