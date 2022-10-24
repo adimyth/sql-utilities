@@ -8,6 +8,11 @@ if [[ "x$DB_HOST" == "x" ]]; then
     exit
 fi
 
+if [[ "x$DB_USER" == "x" ]]; then
+    echo "Please provide DB_USER"
+    exit
+fi
+
 if [[ "x$DB_PASSWORD" == "x" ]]; then
     echo "Please provide DB_PASSWORD"
     exit
