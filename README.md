@@ -74,3 +74,13 @@ Suppose you wish to restore just one of the database and not the others using on
 ## Postgres Database Migration
 
 > Migrates a postgres database from the source machine to destination machine
+
+## Change Ownership
+This folder contains scripts to change the ownership of different database objects -
+
+1. Schemas
+2. Tables
+3. Seqeuences
+4. Triggers
+
+For each of the above database objects, the scripts generate a set of alter statements. Run these alter statements in a separate transaction.
